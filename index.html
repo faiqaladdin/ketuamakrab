@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pemilihan Ketua Makrab — Pendidikan Matematika 2026</title>
+<style>
+  /* Sengaja TIDAK memuat font eksternal / library apa pun agar halaman
+     sangat ringan saat diakses ~150 orang secara bersamaan. */
+  :root{
+    --paper:#f4f6fb;
+    --grid-line:#dde3f0;
+    --ink:#161a2e;
+    --ink-soft:#5a6178;
+    --indigo:#3b4fd9;
+    --indigo-deep:#2532a1;
+    --gold:#e0a72c;
+    --card-bg:#ffffff;
+    --line:#e2e5ef;
+    --error:#d64545;
+    --ok:#2f9e5b;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    min-height:100vh;
+    padding:32px 16px 64px;
+  }
+  .wrap{ max-width:520px; margin:0 auto; }
+
+  .eyebrow{
+    font-family:'Courier New', monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    color:var(--indigo-deep);
+    text-align:center;
+    margin-bottom:8px;
+    text-transform:uppercase;
+  }
+  h1{
+    font-size:clamp(26px, 6vw, 34px);
+    line-height:1.1;
+    text-align:center;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+    font-weight:700;
+  }
+  h1 span{ color:var(--indigo); }
+  .subtitle{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14.5px;
+    max-width:400px;
+    margin:0 auto 22px;
+    line-height:1.5;
+  }
+
+  .step-indicator{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:22px;
+    font-family:'Courier New', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .step-indicator b{ color:var(--indigo-deep); }
+
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:28px 24px;
+    box-shadow:0 20px 40px -28px rgba(22,26,46,.35);
+  }
+
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:13px; font-weight:600; margin-bottom:7px; }
+  .field input[type="text"]{
+    width:100%;
+    font-size:15px;
+    padding:12px 14px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    background:#fbfbfd;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .field input:focus{ outline:none; border-color:var(--indigo); background:#fff; }
+  .field .errmsg{ display:none; color:var(--error); font-size:12.5px; margin-top:6px; }
+  .field.invalid input{ border-color:var(--error); }
+  .field.invalid .errmsg{ display:block; }
+
+  .kelas-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .kelas-chip{
+    border:1.5px solid var(--line); border-radius:10px; padding:12px 4px;
+    text-align:center; cursor:pointer; background:#fbfbfd;
+    font-size:13.5px; font-weight:600; user-select:none;
+  }
+  .kelas-chip:active{ transform:scale(.96); }
+  .kelas-chip.selected{ border-color:var(--indigo); background:linear-gradient(180deg,#eef1ff,#fff); color:var(--indigo-deep); }
+
+  .btn{
+    width:100%; padding:14px; border:none; border-radius:12px;
+    background:var(--ink); color:#fff; font-size:16px; font-weight:700;
+    cursor:pointer; margin-top:6px; font-family:inherit;
+  }
+  .btn:disabled{ background:#b7bbca; cursor:not-allowed; }
+  .btn.secondary{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); margin-top:10px; }
+
+  .form-alert{
+    display:none; background:#fdeceb; border:1px solid #f3c3c0; color:var(--error);
+    font-size:13.5px; padding:10px 14px; border-radius:10px; margin-bottom:16px;
+  }
+
+  /* ---- Halaman pilih paslon ---- */
+  .paslon-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:6px; }
+  .paslon-card{
+    border:1.5px solid var(--line); border-radius:12px; padding:16px;
+    display:flex; align-items:center; gap:14px; cursor:pointer;
+    background:#fbfbfd; user-select:none;
+  }
+  .paslon-card:active{ transform:scale(.99); }
+  .paslon-card .no{
+    width:38px; height:38px; border-radius:50%; background:#eef1ff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; color:var(--indigo-deep); flex-shrink:0; font-size:15px;
+  }
+  .paslon-card .nama{ font-weight:600; font-size:15px; }
+  .paslon-card .radio{
+    margin-left:auto; width:20px; height:20px; border-radius:50%;
+    border:2px solid var(--line); flex-shrink:0; position:relative;
+  }
+  .paslon-card.selected{ border-color:var(--indigo); background:linear-gradient(180deg,#eef1ff,#fff); }
+  .paslon-card.selected .radio{ border-color:var(--indigo); }
+  .paslon-card.selected .radio::after{
+    content:''; position:absolute; inset:3px; border-radius:50%; background:var(--indigo);
+  }
+
+  /* ---- Halaman hasil ---- */
+  .hasil-header{ text-align:center; margin-bottom:18px; }
+  .hasil-header .total{
+    font-family:'Courier New', monospace; font-size:12px; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+  .live-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--ok); margin-right:5px; animation:pulse 1.4s infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .hasil-row{ margin-bottom:16px; }
+  .hasil-row-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .hasil-row-top .nama{ font-weight:700; font-size:14.5px; }
+  .hasil-row-top .nama .tag{
+    display:inline-block; margin-left:6px; font-size:10px; font-weight:700;
+    color:#fff; background:var(--gold); padding:2px 6px; border-radius:20px;
+    vertical-align:middle; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .hasil-row-top .pct{ font-family:'Courier New', monospace; font-weight:700; font-size:15px; }
+  .hasil-bar-track{ height:14px; background:#eef0f6; border-radius:8px; overflow:hidden; }
+  .hasil-bar-fill{
+    height:100%; width:0%; background:linear-gradient(90deg,var(--indigo),var(--indigo-deep));
+    border-radius:8px; transition:width .5s ease;
+  }
+  .hasil-row.leading .hasil-bar-fill{ background:linear-gradient(90deg,var(--gold),#c98a12); }
+  .hasil-row-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; font-family:'Courier New', monospace; }
+
+  .selesai-note{
+    text-align:center; font-size:13px; color:var(--ink-soft); margin-top:20px; line-height:1.5;
+  }
+
+  .hidden{ display:none !important; }
+
+  footer{
+    text-align:center; margin-top:26px; font-family:'Courier New', monospace;
+    font-size:11px; color:var(--ink-soft); letter-spacing:.04em;
+  }
+
+  @media (max-width:420px){ .card{ padding:22px 16px; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Pendidikan Matematika · Angkatan 2026</div>
+  <h1>Pemilihan Ketua <span>Makrab</span></h1>
+  <p class="subtitle">Isi data diri, pilih calon ketua makrab pilihanmu, lalu lihat hasilnya secara langsung.</p>
+
+  <!-- ================= STEP 1: BIODATA ================= -->
+  <div id="step-biodata">
+    <div class="step-indicator">Langkah <b>1</b> dari 2 — Data Diri</div>
+    <div class="card">
+      <div class="form-alert" id="alert-biodata"></div>
+
+      <div class="field" id="field-nama">
+        <label for="nama">Nama Lengkap</label>
+        <input type="text" id="nama" placeholder="Contoh: Faiq Difa" autocomplete="off">
+        <div class="errmsg">Nama wajib diisi.</div>
+      </div>
+
+      <div class="field" id="field-nim">
+        <label for="nim">NIM</label>
+        <input type="text" id="nim" placeholder="Contoh: 26014040008" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
+        <div class="errmsg">NIM wajib diisi.</div>
+      </div>
+
+      <div class="field" id="field-kelas">
+        <label>Kelas</label>
+        <div class="kelas-grid" id="kelas-grid">
+          <div class="kelas-chip" data-value="Kelas A">Kelas A</div>
+          <div class="kelas-chip" data-value="Kelas B">Kelas B</div>
+          <div class="kelas-chip" data-value="Kelas C">Kelas C</div>
+          <div class="kelas-chip" data-value="Kelas D">Kelas D</div>
+        </div>
+        <div class="errmsg" id="err-kelas">Silakan pilih salah satu kelas.</div>
+      </div>
+
+      <button class="btn" id="btn-lanjut">Lanjut ke Pemilihan →</button>
+    </div>
+  </div>
+
+  <!-- ================= STEP 2: PILIH PASLON ================= -->
+  <div id="step-paslon" class="hidden">
+    <div class="step-indicator">Langkah <b>2</b> dari 2 — Pilih Ketua Makrab</div>
+    <div class="card">
+      <div class="form-alert" id="alert-paslon"></div>
+
+      <div class="paslon-list" id="paslon-list"></div>
+      <div class="errmsg" id="err-paslon" style="display:none; margin-bottom:10px;">Silakan pilih salah satu paslon.</div>
+
+      <button class="btn" id="btn-submit">Kirim Pilihan</button>
+      <button class="btn secondary" id="btn-kembali">← Kembali</button>
+    </div>
+  </div>
+
+  <!-- ================= STEP 3: HASIL LIVE ================= -->
+  <div id="step-hasil" class="hidden">
+    <div class="hasil-header">
+      <div class="total"><span class="live-dot"></span>SUARA MASUK: <b id="total-suara">0</b> · DIPERBARUI OTOMATIS</div>
+    </div>
+    <div class="card" id="hasil-card">
+      <!-- diisi otomatis oleh JS -->
+    </div>
+    <p class="selesai-note">Terima kasih telah memberikan suara 🎉<br>Halaman ini akan terus memperbarui hasil secara otomatis tanpa perlu refresh.</p>
+  </div>
+
+  <footer>PEMILIHAN KETUA MAKRAB — 2026</footer>
+</div>
+
+<script>
+  // =====================================================================
+  // KONFIGURASI — ganti sesuai kebutuhan
+  // =====================================================================
+
+  // ⚠️ GANTI dengan URL Web App hasil deploy Google Apps Script (Code.gs).
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4jcEs7kmzUNLKpbUJQRlSEqk5RSKjooW9d79heQVH1sNCKwYSjzSQ9Nm_PLE3IhHc/exec";
+
+  // Nama paslon yang tampil di halaman. Urutan HARUS sama dengan
+  // urutan "PASLON_LIST" di Code.gs (paslon1, paslon2, paslon3, paslon4).
+  const PASLON = [
+    { id: 'paslon1', nomor: 1, nama: 'Paslon 1' },
+    { id: 'paslon2', nomor: 2, nama: 'Paslon 2' },
+    { id: 'paslon3', nomor: 3, nama: 'Paslon 3' },
+    { id: 'paslon4', nomor: 4, nama: 'Paslon 4' }
+  ];
+
+  // Jeda polling hasil (ms). 4 detik cukup "live" tanpa membebani server.
+  const POLL_INTERVAL_MS = 4000;
+
+  // =====================================================================
+
+  const namaInput = document.getElementById('nama');
+  const nimInput = document.getElementById('nim');
+  const kelasGrid = document.getElementById('kelas-grid');
+  const fieldKelas = document.getElementById('field-kelas');
+
+  const stepBiodata = document.getElementById('step-biodata');
+  const stepPaslon = document.getElementById('step-paslon');
+  const stepHasil = document.getElementById('step-hasil');
+
+  const alertBiodata = document.getElementById('alert-biodata');
+  const alertPaslon = document.getElementById('alert-paslon');
+
+  let selectedKelas = '';
+  let selectedPaslon = '';
+  let pollTimer = null;
+
+  // ---- Batasi NIM hanya angka ----
+  nimInput.addEventListener('input', () => {
+    const cleaned = nimInput.value.replace(/\D/g, '');
+    if (cleaned !== nimInput.value) nimInput.value = cleaned;
+  });
+
+  // ---- Pilih kelas ----
+  kelasGrid.addEventListener('click', (e) => {
+    const chip = e.target.closest('.kelas-chip');
+    if (!chip) return;
+    document.querySelectorAll('.kelas-chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    selectedKelas = chip.dataset.value;
+    fieldKelas.classList.remove('invalid');
+  });
+
+  // ---- Render kartu paslon ----
+  const paslonListEl = document.getElementById('paslon-list');
+  PASLON.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'paslon-card';
+    el.dataset.id = p.id;
+    el.innerHTML = `<div class="no">${p.nomor}</div><div class="nama">${escapeHtml(p.nama)}</div><div class="radio"></div>`;
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.paslon-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedPaslon = p.id;
+      document.getElementById('err-paslon').style.display = 'none';
+    });
+    paslonListEl.appendChild(el);
+  });
+
+  // ---- Validasi & pindah ke step 2 ----
+  document.getElementById('btn-lanjut').addEventListener('click', () => {
+    alertBiodata.style.display = 'none';
+    const nama = namaInput.value.trim();
+    const nim = nimInput.value.trim();
+
+    let valid = true;
+    setInvalid('field-nama', nama === ''); if (nama === '') valid = false;
+    setInvalid('field-nim', nim === ''); if (nim === '') valid = false;
+    if (selectedKelas === '') { fieldKelas.classList.add('invalid'); valid = false; }
+    else { fieldKelas.classList.remove('invalid'); }
+
+    if (!valid) {
+      alertBiodata.textContent = 'Mohon lengkapi data yang ditandai di bawah.';
+      alertBiodata.style.display = 'block';
+      return;
+    }
+
+    stepBiodata.classList.add('hidden');
+    stepPaslon.classList.remove('hidden');
+    window.scrollTo(0, 0);
+  });
+
+  document.getElementById('btn-kembali').addEventListener('click', () => {
+    stepPaslon.classList.add('hidden');
+    stepBiodata.classList.remove('hidden');
+    window.scrollTo(0, 0);
+  });
+
+  function setInvalid(fieldId, isInvalid) {
+    document.getElementById(fieldId).classList.toggle('invalid', isInvalid);
+  }
+
+  // ---- Kirim suara ----
+  const submitBtn = document.getElementById('btn-submit');
+  submitBtn.addEventListener('click', () => {
+    alertPaslon.style.display = 'none';
+
+    if (selectedPaslon === '') {
+      document.getElementById('err-paslon').style.display = 'block';
+      return;
+    }
+
+    if (SCRIPT_URL.indexOf('PASTE_URL_WEB_APP') !== -1) {
+      alertPaslon.textContent = 'SCRIPT_URL belum diatur. Buka index.html dan ganti SCRIPT_URL.';
+      alertPaslon.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim...';
+
+    kirimSuara(0);
+  });
+
+  // Kirim dengan percobaan ulang otomatis (maks 3x) agar tahan
+  // terhadap sesaknya trafik saat banyak orang submit bersamaan.
+  function kirimSuara(percobaan) {
+    const payload = {
+      nama: namaInput.value.trim(),
+      nim: nimInput.value.trim(),
+      kelas: selectedKelas,
+      pilihan: selectedPaslon
+    };
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari preflight CORS
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          localStorage.setItem('makrab_voted_nim', payload.nim);
+          renderHasil(data.counts, data.total);
+          stepPaslon.classList.add('hidden');
+          stepHasil.classList.remove('hidden');
+          window.scrollTo(0, 0);
+          startPolling();
+        } else if (data.status === 'duplicate') {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Kirim Pilihan';
+          alertPaslon.textContent = 'NIM ini sudah pernah memberikan suara sebelumnya.';
+          alertPaslon.style.display = 'block';
+        } else {
+          throw new Error(data.message || 'Terjadi kesalahan.');
+        }
+      })
+      .catch(err => {
+        if (percobaan < 2) {
+          // coba lagi setelah jeda singkat (server mungkin sedang sibuk)
+          setTimeout(() => kirimSuara(percobaan + 1), 1200);
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Kirim Pilihan';
+          alertPaslon.textContent = 'Gagal mengirim: ' + err.message + '. Silakan coba lagi.';
+          alertPaslon.style.display = 'block';
+        }
+      });
+  }
+
+  // ---- Render & polling hasil ----
+  const hasilCard = document.getElementById('hasil-card');
+  const totalSuaraEl = document.getElementById('total-suara');
+
+  function renderHasil(counts, total) {
+    totalSuaraEl.textContent = total;
+    const maxCount = Math.max(...PASLON.map(p => counts[p.id] || 0));
+
+    hasilCard.innerHTML = PASLON
+      .map(p => {
+        const c = counts[p.id] || 0;
+        const pct = total > 0 ? Math.round((c / total) * 1000) / 10 : 0;
+        const leading = total > 0 && c === maxCount && maxCount > 0;
+        return `
+          <div class="hasil-row ${leading ? 'leading' : ''}">
+            <div class="hasil-row-top">
+              <span class="nama">${p.nomor}. ${escapeHtml(p.nama)}${leading ? '<span class="tag">Unggul</span>' : ''}</span>
+              <span class="pct">${pct}%</span>
+            </div>
+            <div class="hasil-bar-track"><div class="hasil-bar-fill" style="width:${pct}%"></div></div>
+            <div class="hasil-row-sub">${c} suara</div>
+          </div>`;
+      })
+      .join('');
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(fetchHasil, POLL_INTERVAL_MS);
+  }
+
+  function fetchHasil() {
+    fetch(SCRIPT_URL + '?action=hasil&_=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') renderHasil(data.counts, data.total);
+      })
+      .catch(() => { /* diamkan; coba lagi di polling berikutnya */ });
+  }
+
+  // ---- Jika perangkat ini sudah pernah memilih, langsung tampilkan hasil ----
+  window.addEventListener('DOMContentLoaded', () => {
+    const votedNim = localStorage.getItem('makrab_voted_nim');
+    if (votedNim && SCRIPT_URL.indexOf('PASTE_URL_WEB_APP') === -1) {
+      stepBiodata.classList.add('hidden');
+      stepHasil.classList.remove('hidden');
+      fetchHasil();
+      startPolling();
+    }
+  });
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+</script>
+
+</body>
+</html>
