@@ -101,11 +101,11 @@
   .field.invalid input{ border-color:var(--error); }
   .field.invalid .errmsg{ display:block; }
 
-  .kelas-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .kelas-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
   .kelas-chip{
-    border:1.5px solid var(--line); border-radius:10px; padding:12px 4px;
+    border:1.5px solid var(--line); border-radius:10px; padding:14px 4px;
     text-align:center; cursor:pointer; background:#fbfbfd;
-    font-size:13.5px; font-weight:600; user-select:none;
+    font-size:14px; font-weight:600; user-select:none;
   }
   .kelas-chip:active{ transform:scale(.96); }
   .kelas-chip.selected{ border-color:var(--indigo); background:linear-gradient(180deg,#eef1ff,#fff); color:var(--indigo-deep); }
@@ -147,38 +147,15 @@
     content:''; position:absolute; inset:3px; border-radius:50%; background:var(--indigo);
   }
 
-  /* ---- Halaman hasil ---- */
-  .hasil-header{ text-align:center; margin-bottom:18px; }
-  .hasil-header .total{
-    font-family:'Courier New', monospace; font-size:12px; color:var(--ink-soft);
-    text-transform:uppercase; letter-spacing:.06em;
+  /* ---- Halaman selesai ---- */
+  .selesai-wrap{ text-align:center; padding:20px 4px; }
+  .selesai-icon{
+    width:56px; height:56px; border-radius:50%; background:linear-gradient(180deg,#eef1ff,#e3e8ff);
+    color:var(--indigo-deep); display:flex; align-items:center; justify-content:center;
+    font-size:26px; margin:0 auto 16px;
   }
-  .live-dot{
-    display:inline-block; width:7px; height:7px; border-radius:50%;
-    background:var(--ok); margin-right:5px; animation:pulse 1.4s infinite;
-  }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
-
-  .hasil-row{ margin-bottom:16px; }
-  .hasil-row-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
-  .hasil-row-top .nama{ font-weight:700; font-size:14.5px; }
-  .hasil-row-top .nama .tag{
-    display:inline-block; margin-left:6px; font-size:10px; font-weight:700;
-    color:#fff; background:var(--gold); padding:2px 6px; border-radius:20px;
-    vertical-align:middle; text-transform:uppercase; letter-spacing:.03em;
-  }
-  .hasil-row-top .pct{ font-family:'Courier New', monospace; font-weight:700; font-size:15px; }
-  .hasil-bar-track{ height:14px; background:#eef0f6; border-radius:8px; overflow:hidden; }
-  .hasil-bar-fill{
-    height:100%; width:0%; background:linear-gradient(90deg,var(--indigo),var(--indigo-deep));
-    border-radius:8px; transition:width .5s ease;
-  }
-  .hasil-row.leading .hasil-bar-fill{ background:linear-gradient(90deg,var(--gold),#c98a12); }
-  .hasil-row-sub{ font-size:11.5px; color:var(--ink-soft); margin-top:4px; font-family:'Courier New', monospace; }
-
-  .selesai-note{
-    text-align:center; font-size:13px; color:var(--ink-soft); margin-top:20px; line-height:1.5;
-  }
+  .selesai-wrap h2{ margin:0 0 8px; font-size:20px; }
+  .selesai-wrap p{ color:var(--ink-soft); font-size:14px; line-height:1.6; margin:0; }
 
   .hidden{ display:none !important; }
 
@@ -195,7 +172,7 @@
 <div class="wrap">
   <div class="eyebrow">Pendidikan Matematika · Angkatan 2026</div>
   <h1>Pemilihan Ketua <span>Makrab</span></h1>
-  <p class="subtitle">Isi data diri, pilih calon ketua makrab pilihanmu, lalu lihat hasilnya secara langsung.</p>
+  <p class="subtitle">Isi data diri, lalu pilih calon ketua makrab pilihanmu.</p>
 
   <!-- ================= STEP 1: BIODATA ================= -->
   <div id="step-biodata">
@@ -209,19 +186,12 @@
         <div class="errmsg">Nama wajib diisi.</div>
       </div>
 
-      <div class="field" id="field-nim">
-        <label for="nim">NIM</label>
-        <input type="text" id="nim" placeholder="Contoh: 26014040008" autocomplete="off" inputmode="numeric" pattern="[0-9]*">
-        <div class="errmsg">NIM wajib diisi.</div>
-      </div>
-
       <div class="field" id="field-kelas">
         <label>Kelas</label>
         <div class="kelas-grid" id="kelas-grid">
           <div class="kelas-chip" data-value="Kelas A">Kelas A</div>
           <div class="kelas-chip" data-value="Kelas B">Kelas B</div>
           <div class="kelas-chip" data-value="Kelas C">Kelas C</div>
-          <div class="kelas-chip" data-value="Kelas D">Kelas D</div>
         </div>
         <div class="errmsg" id="err-kelas">Silakan pilih salah satu kelas.</div>
       </div>
@@ -244,15 +214,15 @@
     </div>
   </div>
 
-  <!-- ================= STEP 3: HASIL LIVE ================= -->
-  <div id="step-hasil" class="hidden">
-    <div class="hasil-header">
-      <div class="total"><span class="live-dot"></span>SUARA MASUK: <b id="total-suara">0</b> · DIPERBARUI OTOMATIS</div>
+  <!-- ================= STEP 3: SELESAI (tanpa hasil) ================= -->
+  <div id="step-selesai" class="hidden">
+    <div class="card">
+      <div class="selesai-wrap">
+        <div class="selesai-icon">✓</div>
+        <h2>Suara Kamu Sudah Tercatat</h2>
+        <p>Terima kasih telah memberikan suara 🎉<br>Hasil pemilihan akan diumumkan oleh panitia.</p>
+      </div>
     </div>
-    <div class="card" id="hasil-card">
-      <!-- diisi otomatis oleh JS -->
-    </div>
-    <p class="selesai-note">Terima kasih telah memberikan suara 🎉<br>Halaman ini akan terus memperbarui hasil secara otomatis tanpa perlu refresh.</p>
   </div>
 
   <footer>PEMILIHAN KETUA MAKRAB — 2026</footer>
@@ -264,7 +234,7 @@
   // =====================================================================
 
   // ⚠️ GANTI dengan URL Web App hasil deploy Google Apps Script (Code.gs).
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4jcEs7kmzUNLKpbUJQRlSEqk5RSKjooW9d79heQVH1sNCKwYSjzSQ9Nm_PLE3IhHc/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJl_-Zepk6xduXwT5OzW-dzYY1RM7onWVeLknNZwi13auInnEBPI50uZRdx6yjjINW/exec";
 
   // Nama paslon yang tampil di halaman. Urutan HARUS sama dengan
   // urutan "PASLON_LIST" di Code.gs (paslon1, paslon2, paslon3, paslon4).
@@ -275,32 +245,21 @@
     { id: 'paslon4', nomor: 4, nama: 'Paslon 4' }
   ];
 
-  // Jeda polling hasil (ms). 4 detik cukup "live" tanpa membebani server.
-  const POLL_INTERVAL_MS = 4000;
-
   // =====================================================================
 
   const namaInput = document.getElementById('nama');
-  const nimInput = document.getElementById('nim');
   const kelasGrid = document.getElementById('kelas-grid');
   const fieldKelas = document.getElementById('field-kelas');
 
   const stepBiodata = document.getElementById('step-biodata');
   const stepPaslon = document.getElementById('step-paslon');
-  const stepHasil = document.getElementById('step-hasil');
+  const stepSelesai = document.getElementById('step-selesai');
 
   const alertBiodata = document.getElementById('alert-biodata');
   const alertPaslon = document.getElementById('alert-paslon');
 
   let selectedKelas = '';
   let selectedPaslon = '';
-  let pollTimer = null;
-
-  // ---- Batasi NIM hanya angka ----
-  nimInput.addEventListener('input', () => {
-    const cleaned = nimInput.value.replace(/\D/g, '');
-    if (cleaned !== nimInput.value) nimInput.value = cleaned;
-  });
 
   // ---- Pilih kelas ----
   kelasGrid.addEventListener('click', (e) => {
@@ -332,11 +291,9 @@
   document.getElementById('btn-lanjut').addEventListener('click', () => {
     alertBiodata.style.display = 'none';
     const nama = namaInput.value.trim();
-    const nim = nimInput.value.trim();
 
     let valid = true;
     setInvalid('field-nama', nama === ''); if (nama === '') valid = false;
-    setInvalid('field-nim', nim === ''); if (nim === '') valid = false;
     if (selectedKelas === '') { fieldKelas.classList.add('invalid'); valid = false; }
     else { fieldKelas.classList.remove('invalid'); }
 
@@ -388,7 +345,6 @@
   function kirimSuara(percobaan) {
     const payload = {
       nama: namaInput.value.trim(),
-      nim: nimInput.value.trim(),
       kelas: selectedKelas,
       pilihan: selectedPaslon
     };
@@ -401,17 +357,8 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          localStorage.setItem('makrab_voted_nim', payload.nim);
-          renderHasil(data.counts, data.total);
-          stepPaslon.classList.add('hidden');
-          stepHasil.classList.remove('hidden');
-          window.scrollTo(0, 0);
-          startPolling();
-        } else if (data.status === 'duplicate') {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Kirim Pilihan';
-          alertPaslon.textContent = 'NIM ini sudah pernah memberikan suara sebelumnya.';
-          alertPaslon.style.display = 'block';
+          try { localStorage.setItem('makrab_sudah_pilih', '1'); } catch (e) {}
+          tampilkanSelesai();
         } else {
           throw new Error(data.message || 'Terjadi kesalahan.');
         }
@@ -429,54 +376,20 @@
       });
   }
 
-  // ---- Render & polling hasil ----
-  const hasilCard = document.getElementById('hasil-card');
-  const totalSuaraEl = document.getElementById('total-suara');
-
-  function renderHasil(counts, total) {
-    totalSuaraEl.textContent = total;
-    const maxCount = Math.max(...PASLON.map(p => counts[p.id] || 0));
-
-    hasilCard.innerHTML = PASLON
-      .map(p => {
-        const c = counts[p.id] || 0;
-        const pct = total > 0 ? Math.round((c / total) * 1000) / 10 : 0;
-        const leading = total > 0 && c === maxCount && maxCount > 0;
-        return `
-          <div class="hasil-row ${leading ? 'leading' : ''}">
-            <div class="hasil-row-top">
-              <span class="nama">${p.nomor}. ${escapeHtml(p.nama)}${leading ? '<span class="tag">Unggul</span>' : ''}</span>
-              <span class="pct">${pct}%</span>
-            </div>
-            <div class="hasil-bar-track"><div class="hasil-bar-fill" style="width:${pct}%"></div></div>
-            <div class="hasil-row-sub">${c} suara</div>
-          </div>`;
-      })
-      .join('');
+  function tampilkanSelesai() {
+    stepBiodata.classList.add('hidden');
+    stepPaslon.classList.add('hidden');
+    stepSelesai.classList.remove('hidden');
+    window.scrollTo(0, 0);
   }
 
-  function startPolling() {
-    if (pollTimer) return;
-    pollTimer = setInterval(fetchHasil, POLL_INTERVAL_MS);
-  }
-
-  function fetchHasil() {
-    fetch(SCRIPT_URL + '?action=hasil&_=' + Date.now())
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') renderHasil(data.counts, data.total);
-      })
-      .catch(() => { /* diamkan; coba lagi di polling berikutnya */ });
-  }
-
-  // ---- Jika perangkat ini sudah pernah memilih, langsung tampilkan hasil ----
+  // ---- Jika perangkat/browser ini sudah pernah memilih, langsung tampilkan "selesai" ----
+  // Catatan: karena tidak ada NIM lagi, pengecekan ganda ini hanya berbasis
+  // penanda lokal di browser (localStorage), bukan identitas unik per orang.
   window.addEventListener('DOMContentLoaded', () => {
-    const votedNim = localStorage.getItem('makrab_voted_nim');
-    if (votedNim && SCRIPT_URL.indexOf('PASTE_URL_WEB_APP') === -1) {
-      stepBiodata.classList.add('hidden');
-      stepHasil.classList.remove('hidden');
-      fetchHasil();
-      startPolling();
+    const sudahPilih = localStorage.getItem('makrab_sudah_pilih');
+    if (sudahPilih === '1') {
+      tampilkanSelesai();
     }
   });
 
