@@ -63,6 +63,19 @@
     line-height:1.5;
   }
 
+  /* ---- Status bar (countdown 5 menit dari server) ---- */
+  .status-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#eef1ff; border:1px solid #d7ddfb; border-radius:12px;
+    padding:12px 16px; margin-bottom:16px; font-size:13.5px;
+  }
+  .status-bar.open{ background:#eafaf0; border-color:#c9eeda; }
+  .status-bar.closed{ background:#fdeceb; border-color:#f3c3c0; }
+  .status-bar .label{ font-weight:600; }
+  .status-bar .timer{ font-family:'Courier New', monospace; font-weight:700; font-size:17px; }
+  .status-bar.closed .timer, .status-bar.closed .label{ color:var(--error); }
+  .status-bar.open .timer, .status-bar.open .label{ color:var(--ok); }
+
   .step-indicator{
     display:flex;
     justify-content:center;
@@ -146,6 +159,7 @@
   .paslon-card.selected .radio::after{
     content:''; position:absolute; inset:3px; border-radius:50%; background:var(--indigo);
   }
+  .paslon-card.disabled{ opacity:.5; pointer-events:none; }
 
   /* ---- Halaman selesai ---- */
   .selesai-wrap{ text-align:center; padding:20px 4px; }
@@ -154,6 +168,7 @@
     color:var(--indigo-deep); display:flex; align-items:center; justify-content:center;
     font-size:26px; margin:0 auto 16px;
   }
+  .selesai-icon.gagal{ background:linear-gradient(180deg,#fdeceb,#fbdcda); color:var(--error); }
   .selesai-wrap h2{ margin:0 0 8px; font-size:20px; }
   .selesai-wrap p{ color:var(--ink-soft); font-size:14px; line-height:1.6; margin:0; }
 
@@ -173,6 +188,12 @@
   <div class="eyebrow">Pendidikan Matematika · Angkatan 2026</div>
   <h1>Pemilihan Ketua <span>Makrab</span></h1>
   <p class="subtitle">Isi data diri, lalu pilih calon ketua makrab pilihanmu.</p>
+
+  <!-- STATUS BAR — waktu pemilihan, disinkronkan ke server -->
+  <div class="status-bar" id="status-bar">
+    <span class="label" id="status-label">Memeriksa status pemilihan...</span>
+    <span class="timer" id="status-timer"></span>
+  </div>
 
   <!-- ================= STEP 1: BIODATA ================= -->
   <div id="step-biodata">
@@ -214,13 +235,13 @@
     </div>
   </div>
 
-  <!-- ================= STEP 3: SELESAI (tanpa hasil) ================= -->
+  <!-- ================= STEP 3: SELESAI / GAGAL ================= -->
   <div id="step-selesai" class="hidden">
     <div class="card">
       <div class="selesai-wrap">
-        <div class="selesai-icon">✓</div>
-        <h2>Suara Kamu Sudah Tercatat</h2>
-        <p>Terima kasih telah memberikan suara 🎉<br>Hasil pemilihan akan diumumkan oleh panitia.</p>
+        <div class="selesai-icon" id="selesai-icon">✓</div>
+        <h2 id="selesai-judul">Suara Kamu Sudah Tercatat</h2>
+        <p id="selesai-desc">Terima kasih telah memberikan suara 🎉<br>Hasil pemilihan akan diumumkan oleh panitia.</p>
       </div>
     </div>
   </div>
@@ -234,16 +255,19 @@
   // =====================================================================
 
   // ⚠️ GANTI dengan URL Web App hasil deploy Google Apps Script (Code.gs).
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwo5LXd3o7ar6N8WA4k57b97EE1bJ9unSYa5w6ELnIeWIjZ0Jy6JSDyEzObE-boAoVO/exec";
+  // Harus SAMA PERSIS dengan SCRIPT_URL di hasil.html.
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZSdbQkpbbL8_P_88cYTp7XthGzPaWChgXFhFy66pG6ppZY8-_j0oFTvqxRggXeT4P/exec";
 
-  // Nama paslon yang tampil di halaman. Urutan HARUS sama dengan
-  // urutan "PASLON_LIST" di Code.gs (paslon1, paslon2, paslon3, paslon4).
+  // Nama paslon yang tampil di halaman. Urutan & id HARUS sama dengan
+  // "PASLON_IDS" di Code.gs (paslon1, paslon2, paslon3, paslon4).
   const PASLON = [
     { id: 'paslon1', nomor: 1, nama: 'Paslon 1' },
     { id: 'paslon2', nomor: 2, nama: 'Paslon 2' },
     { id: 'paslon3', nomor: 3, nama: 'Paslon 3' },
     { id: 'paslon4', nomor: 4, nama: 'Paslon 4' }
   ];
+
+  const STATUS_POLL_MS = 3000; // sinkronisasi ulang status ke server tiap 3 detik
 
   // =====================================================================
 
@@ -258,8 +282,18 @@
   const alertBiodata = document.getElementById('alert-biodata');
   const alertPaslon = document.getElementById('alert-paslon');
 
+  const statusBar = document.getElementById('status-bar');
+  const statusLabel = document.getElementById('status-label');
+  const statusTimer = document.getElementById('status-timer');
+  const btnLanjut = document.getElementById('btn-lanjut');
+  const submitBtn = document.getElementById('btn-submit');
+
   let selectedKelas = '';
   let selectedPaslon = '';
+  let votingStatus = 'idle';
+  let localRemaining = 0;
+  let sudahDikirim = false;
+  let tickTimer = null;
 
   // ---- Pilih kelas ----
   kelasGrid.addEventListener('click', (e) => {
@@ -279,6 +313,7 @@
     el.dataset.id = p.id;
     el.innerHTML = `<div class="no">${p.nomor}</div><div class="nama">${escapeHtml(p.nama)}</div><div class="radio"></div>`;
     el.addEventListener('click', () => {
+      if (votingStatus !== 'open') return;
       document.querySelectorAll('.paslon-card').forEach(c => c.classList.remove('selected'));
       el.classList.add('selected');
       selectedPaslon = p.id;
@@ -288,10 +323,21 @@
   });
 
   // ---- Validasi & pindah ke step 2 ----
-  document.getElementById('btn-lanjut').addEventListener('click', () => {
+  btnLanjut.addEventListener('click', () => {
     alertBiodata.style.display = 'none';
-    const nama = namaInput.value.trim();
 
+    if (votingStatus === 'idle') {
+      alertBiodata.textContent = 'Pemilihan belum dimulai panitia. Silakan tunggu.';
+      alertBiodata.style.display = 'block';
+      return;
+    }
+    if (votingStatus === 'closed') {
+      alertBiodata.textContent = 'Waktu pemilihan sudah berakhir.';
+      alertBiodata.style.display = 'block';
+      return;
+    }
+
+    const nama = namaInput.value.trim();
     let valid = true;
     setInvalid('field-nama', nama === ''); if (nama === '') valid = false;
     if (selectedKelas === '') { fieldKelas.classList.add('invalid'); valid = false; }
@@ -319,15 +365,18 @@
   }
 
   // ---- Kirim suara ----
-  const submitBtn = document.getElementById('btn-submit');
   submitBtn.addEventListener('click', () => {
     alertPaslon.style.display = 'none';
 
+    if (votingStatus !== 'open') {
+      alertPaslon.textContent = 'Waktu pemilihan sudah tidak berlaku.';
+      alertPaslon.style.display = 'block';
+      return;
+    }
     if (selectedPaslon === '') {
       document.getElementById('err-paslon').style.display = 'block';
       return;
     }
-
     if (SCRIPT_URL.indexOf('PASTE_URL_WEB_APP') !== -1) {
       alertPaslon.textContent = 'SCRIPT_URL belum diatur. Buka index.html dan ganti SCRIPT_URL.';
       alertPaslon.style.display = 'block';
@@ -357,8 +406,13 @@
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
-          try { localStorage.setItem('makrab_sudah_pilih', '1'); } catch (e) {}
-          tampilkanSelesai();
+          sudahDikirim = true;
+          tampilkanSelesai(true, 'Suara Kamu Sudah Tercatat', 'Terima kasih telah memberikan suara 🎉<br>Hasil pemilihan akan diumumkan oleh panitia.');
+        } else if (data.status === 'duplicate') {
+          sudahDikirim = true;
+          tampilkanSelesai(false, 'Sudah Pernah Memilih', 'Nama & kelas ini sudah tercatat memilih sebelumnya. Kalau menurutmu ini keliru, hubungi panitia.');
+        } else if (data.status === 'closed' || data.status === 'not_started') {
+          tampilkanSelesai(false, 'Waktu Pemilihan Berakhir', data.message || 'Pemilihan sedang tidak berlangsung.');
         } else {
           throw new Error(data.message || 'Terjadi kesalahan.');
         }
@@ -376,22 +430,80 @@
       });
   }
 
-  function tampilkanSelesai() {
+  function tampilkanSelesai(sukses, judul, deskripsiHtml) {
     stepBiodata.classList.add('hidden');
     stepPaslon.classList.add('hidden');
     stepSelesai.classList.remove('hidden');
+    document.getElementById('selesai-icon').textContent = sukses ? '✓' : '⚠️';
+    document.getElementById('selesai-icon').classList.toggle('gagal', !sukses);
+    document.getElementById('selesai-judul').textContent = judul;
+    document.getElementById('selesai-desc').innerHTML = deskripsiHtml;
     window.scrollTo(0, 0);
+    if (tickTimer) clearInterval(tickTimer);
   }
 
-  // ---- Jika perangkat/browser ini sudah pernah memilih, langsung tampilkan "selesai" ----
-  // Catatan: karena tidak ada NIM lagi, pengecekan ganda ini hanya berbasis
-  // penanda lokal di browser (localStorage), bukan identitas unik per orang.
-  window.addEventListener('DOMContentLoaded', () => {
-    const sudahPilih = localStorage.getItem('makrab_sudah_pilih');
-    if (sudahPilih === '1') {
-      tampilkanSelesai();
+  /* ---------------- STATUS / COUNTDOWN 5 MENIT (dari server) ---------------- */
+
+  function formatWaktu(detik) {
+    const m = Math.floor(detik / 60).toString().padStart(2, '0');
+    const s = Math.floor(detik % 60).toString().padStart(2, '0');
+    return m + ':' + s;
+  }
+
+  function terapkanStatusUI() {
+    statusBar.classList.remove('open', 'closed');
+    const paslonDisabled = votingStatus !== 'open';
+    document.querySelectorAll('.paslon-card').forEach(c => c.classList.toggle('disabled', paslonDisabled));
+
+    if (votingStatus === 'idle') {
+      statusBar.classList.add('closed');
+      statusLabel.textContent = 'Pemilihan belum dimulai panitia';
+      statusTimer.textContent = '';
+    } else if (votingStatus === 'open') {
+      statusBar.classList.add('open');
+      statusLabel.textContent = 'Sedang berlangsung — sisa waktu';
+      statusTimer.textContent = formatWaktu(localRemaining);
+    } else {
+      statusBar.classList.add('closed');
+      statusLabel.textContent = 'Waktu pemilihan telah berakhir';
+      statusTimer.textContent = '00:00';
+      if (!sudahDikirim && !stepSelesai.classList.contains('hidden') === false) {
+        // kalau peserta masih di step biodata/paslon saat waktu habis
+        if (stepPaslon.classList.contains('hidden') === false || stepBiodata.classList.contains('hidden') === false) {
+          tampilkanSelesai(false, 'Waktu Habis', 'Waktu 5 menit untuk memilih sudah berakhir. Silakan hubungi panitia jika ada kendala.');
+        }
+      }
     }
-  });
+  }
+
+  function mulaiTickLokal() {
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(() => {
+      if (votingStatus === 'open' && localRemaining > 0) {
+        localRemaining--;
+        statusTimer.textContent = formatWaktu(localRemaining);
+        if (localRemaining <= 0) ambilStatus();
+      }
+    }, 1000);
+  }
+
+  async function ambilStatus() {
+    try {
+      const res = await fetch(SCRIPT_URL + '?action=status&_=' + Date.now());
+      const data = await res.json();
+      if (data.status === 'success') {
+        votingStatus = data.votingStatus;
+        localRemaining = data.remainingSeconds;
+        terapkanStatusUI();
+      }
+    } catch (err) {
+      // biarkan, coba lagi di polling berikutnya
+    }
+  }
+
+  ambilStatus();
+  mulaiTickLokal();
+  setInterval(ambilStatus, STATUS_POLL_MS);
 
   function escapeHtml(str) {
     const d = document.createElement('div');
