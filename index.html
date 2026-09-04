@@ -256,18 +256,21 @@
 
   // ⚠️ GANTI dengan URL Web App hasil deploy Google Apps Script (Code.gs).
   // Harus SAMA PERSIS dengan SCRIPT_URL di hasil.html.
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZSdbQkpbbL8_P_88cYTp7XthGzPaWChgXFhFy66pG6ppZY8-_j0oFTvqxRggXeT4P/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwO6C8SvNJaDkPFZgbaPzu0TdIfEXv48uV2F0nrhfHG6oP5v9dEuKEqq1nrz4IDDU5y/exec";
 
   // Nama paslon yang tampil di halaman. Urutan & id HARUS sama dengan
   // "PASLON_IDS" di Code.gs (paslon1, paslon2, paslon3, paslon4).
   const PASLON = [
-    { id: 'paslon1', nomor: 1, nama: 'Paslon 1' },
-    { id: 'paslon2', nomor: 2, nama: 'Paslon 2' },
-    { id: 'paslon3', nomor: 3, nama: 'Paslon 3' },
-    { id: 'paslon4', nomor: 4, nama: 'Paslon 4' }
+    { id: 'paslon1', nomor: 1, nama: 'Amirudin Rahman' },
+    { id: 'paslon2', nomor: 2, nama: 'Imran Zahrawan' },
+    { id: 'paslon3', nomor: 3, nama: 'Fadhilla Jaya Huta' },
+    { id: 'paslon4', nomor: 4, nama: 'Dhiyaul Haq Fadhil' }
   ];
 
-  const STATUS_POLL_MS = 3000; // sinkronisasi ulang status ke server tiap 3 detik
+  // Basis interval polling status. Dibuat lebih longgar + acak (jitter) di
+  // bawah supaya ~100 HP tidak nembak request ke server tepat di detik
+  // yang sama (mencegah lonjakan beban serentak / thundering herd).
+  const STATUS_POLL_BASE_MS = 5000;
 
   // =====================================================================
 
@@ -487,7 +490,13 @@
     }, 1000);
   }
 
+  let sedangAmbilStatus = false;
+
   async function ambilStatus() {
+    // Cegah request numpuk kalau respons sebelumnya belum selesai
+    // (bisa terjadi kalau koneksi lambat saat trafik ramai).
+    if (sedangAmbilStatus) return;
+    sedangAmbilStatus = true;
     try {
       const res = await fetch(SCRIPT_URL + '?action=status&_=' + Date.now());
       const data = await res.json();
@@ -497,13 +506,28 @@
         terapkanStatusUI();
       }
     } catch (err) {
-      // biarkan, coba lagi di polling berikutnya
+      // biarkan, coba lagi di polling berikutnya — negara UI tidak diubah
+      // supaya tidak "berkedip" ke status salah hanya karena 1x gagal fetch
+    } finally {
+      sedangAmbilStatus = false;
     }
   }
 
-  ambilStatus();
+  function jadwalkanPollingBerikutnya() {
+    // Interval acak (jitter) supaya ~100 HP tidak semua menembak
+    // permintaan ke server persis di detik yang sama.
+    const jitter = Math.random() * 3000; // 0–3 detik acak
+    setTimeout(async () => {
+      await ambilStatus();
+      jadwalkanPollingBerikutnya();
+    }, STATUS_POLL_BASE_MS + jitter);
+  }
+
+  // Jeda acak singkat sebelum permintaan pertama (0–1.5 detik) — berguna
+  // saat link dibagikan dan banyak orang membuka halaman nyaris bersamaan.
+  setTimeout(ambilStatus, Math.random() * 1500);
   mulaiTickLokal();
-  setInterval(ambilStatus, STATUS_POLL_MS);
+  jadwalkanPollingBerikutnya();
 
   function escapeHtml(str) {
     const d = document.createElement('div');
